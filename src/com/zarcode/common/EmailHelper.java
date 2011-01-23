@@ -16,13 +16,13 @@ public class EmailHelper {
 	
 	private static Logger logger = Logger.getLogger(EmailHelper.class.getName());
 
-	public static void sendAppAlert(String title, String msgBody) {
+	public static void sendAppAlert(String title, String msgBody, String appName) {
 		Properties props = new Properties();
         Session session = Session.getDefaultInstance(props, null);
 
         try {
             Message msg = new MimeMessage(session);
-            msg.setFrom(new InternetAddress("lrkirven@gmail.com", "LazyLaker App"));
+            msg.setFrom(new InternetAddress("lrkirven@gmail.com", appName));
             msg.addRecipient(Message.RecipientType.TO, new InternetAddress("lrkirven@gmail.com", "L. Kirven"));
             msg.setSubject(title);
             msg.setText(msgBody);
