@@ -135,8 +135,8 @@ public class BlockTea {
 	    
 	}
 	
-	private static String removeTrailingZeros(String str ){
-		
+	private static String removeTrailingZeros(String str){
+		char [] copy = null;
 		if (str == null){
 			return null;
 		}
@@ -144,16 +144,24 @@ public class BlockTea {
 		char[] chars = str.toCharArray();
 		int length = str.length();
 		int index = 0;
-		index = length -1;
-		for (; index >=0;index--) {
+		index = length-1;
+		for (; index >= 0; index--) {
 			char ch = chars[index];
-			int val = chars[index];
-			if (ch != '0' && val != 0){
+			byte val = (byte)chars[index];
+			if (val != 0) {
+			// if (ch != '0' && val != 0) {
 				break;
 			}
 		}
-		int lastIndex = (index+1);
-		return ( (index == length-1) ? str : str.substring(0, lastIndex) );
+		
+		if (index != length-1) {
+			int lastIndex = (index+1);
+			copy = new char[ lastIndex ];
+			System.arraycopy( chars, 0, copy, 0, lastIndex );
+		}
+	
+	    // return (new String(copy));
+	    return ( (index == length-1) ? str : (new String(copy)) );
 		
 	}
 	
