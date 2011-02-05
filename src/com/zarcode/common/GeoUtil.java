@@ -5,6 +5,18 @@ import java.util.List;
 import ch.hsr.geohash.WGS84Point;
 
 public class GeoUtil {
+	
+	
+	public static double calcBearing(double lat1, double lng1, double lat2, double lng2) {
+		double bearing = 0.0;
+		// determine angle
+		bearing = Math.atan2(Math.sin(lng2-lng1) * Math.cos(lat2), (Math.cos(lat1) * Math.sin(lat2)) - (Math.sin(lat1) * Math.cos(lat2) * Math.cos(lng2-lng1)));
+		// convert to degrees
+		bearing =  Math.toDegrees(bearing);
+		// use % to turn -90 = 270
+		bearing = (bearing + 360.0) % 360;
+		return bearing;
+	}
 
 	/**
 	 * Implements the Jordan curve theorem
