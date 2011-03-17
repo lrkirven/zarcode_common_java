@@ -26,7 +26,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import com.google.appengine.api.users.User;
-import com.zarcode.common.AppCommon;
+import com.zarcode.common.PlatformCommon;
 import com.zarcode.platform.dao.LoaderDao;
 import com.zarcode.platform.model.AbstractLoaderDO;
 
@@ -42,15 +42,26 @@ public class JDOLoaderServlet extends HttpServlet {
     	logger.info("doPost(): Entered"); 
     	loadDataObjects(req);
     	logger.info("doPost(): Processing Done"); 
-    	resp.setContentType("text/plain");
-    	resp.getWriter().println(uploadMessages.toString());
+    	resp.setContentType("text/html");
+    	StringBuilder page = new StringBuilder();
+    	page.append("<html><body>");
+        page.append(uploadMessages.toString());
+        page.append("<br><br><a href=\"/_admin\">Return to Admin Console</a>");
+        page.append("</body></html>");
+    	logger.info("doPost(): Returing: " + page.toString()); 
+    	resp.getWriter().println(page.toString());
     }
 	
     public void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
     	loadDataObjects(req);
-        resp.setContentType("text/plain");
-        resp.getWriter().println(uploadMessages.toString());
+        resp.setContentType("text/html");
+    	StringBuilder page = new StringBuilder();
+    	page.append("<html><body>");
+        page.append(uploadMessages.toString());
+        page.append("<br><br><a href=\"/_admin\">Return to Admin Console</a>");
+        page.append("</body></html>");
+        resp.getWriter().println(page.toString());
     }
     
     /**
@@ -78,7 +89,7 @@ public class JDOLoaderServlet extends HttpServlet {
     
     private void addMsg(String str) {
     	uploadMessages.append(str);
-    	uploadMessages.append("\n");
+    	uploadMessages.append("<br>");
     }
 
     /**
@@ -107,6 +118,7 @@ public class JDOLoaderServlet extends HttpServlet {
     	logger.info("loadDataObjects(): Entered"); 
     	
     	uploadMessages = new StringBuilder();
+    	uploadMessages.append("<p>");
     	
     	HttpSession session = req.getSession();
     	
@@ -119,7 +131,7 @@ public class JDOLoaderServlet extends HttpServlet {
     		        boolean xmlOn = false;
     		        Pattern p = Pattern.compile("<jdo-loader.*>");
     		        Matcher m = null;
-
+    		        
     		        BufferedReader reader = req.getReader();
     		        while ((line = reader.readLine()) != null) {
     		        	m = p.matcher(line);
@@ -135,7 +147,6 @@ public class JDOLoaderServlet extends HttpServlet {
     		        }
 
     		        logger.info("loadDataObjects(): XML: " + sb.toString());
-    		        
     				// DataInputStream in = new DataInputStream(req.getInputStream());
     		        StringReader sr = new StringReader(sb.toString());
     				InputSource src = new InputSource(sr);
@@ -272,6 +283,7 @@ public class JDOLoaderServlet extends HttpServlet {
     		msg = "Session does not exists [SESSION]";
 	    	addMsg(msg);
     	}
+    	uploadMessages.append("</p>");
     }
     
     private Object _createDataObject(Node node) {
@@ -327,7 +339,7 @@ public class JDOLoaderServlet extends HttpServlet {
 		        					String mName = memberName.getNodeValue();
 		        					Class args[] = new Class[1];
 		        					args[0] = nextCls;
-		        					mName = AppCommon.capitalize(mName);
+		        					mName = PlatformCommon.capitalize(mName);
 		        					Method m = cls.getMethod("set" + mName, args);
 		        					Object arglist[] = new Object[1];
 		        					arglist[0] = createdObject;

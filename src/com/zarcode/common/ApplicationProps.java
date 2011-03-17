@@ -3,7 +3,7 @@ package com.zarcode.common;
 import java.util.HashMap;
 import java.util.List;
 
-import com.zarcode.platform.dao.AppDao;
+import com.zarcode.platform.dao.AppPropDao;
 import com.zarcode.platform.model.AppPropDO;
 
 public class ApplicationProps {
@@ -33,7 +33,7 @@ public class ApplicationProps {
 	
 		if (!loaded) {
 			map = new HashMap<String, AppPropDO>();
-			AppDao dao = new AppDao();
+			AppPropDao dao = new AppPropDao();
 			List<AppPropDO> props = dao.getProps();
 			
 			if (props != null && props.size() > 0) {
@@ -56,7 +56,7 @@ public class ApplicationProps {
 			prop = map.get(name);
 		}
 		if (prop == null) {
-			AppDao dao = new AppDao();
+			AppPropDao dao = new AppPropDao();
 			dao.addTestProp();
 		}
 		return prop;

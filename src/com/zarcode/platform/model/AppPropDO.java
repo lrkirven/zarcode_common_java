@@ -28,10 +28,11 @@ public class AppPropDO extends AbstractLoaderDO implements Serializable {
 	@Persistent
 	private Date dateValue = null;
 
+	public AppPropDO() {
+	}
 	
 	public AppPropDO(String name) {
 		this.name = name;
-		this.stringValue = "test";
 	}
 	
 	public void postCreation() {
@@ -41,20 +42,40 @@ public class AppPropDO extends AbstractLoaderDO implements Serializable {
 		return propId;
 	}
 	
+	public void setPropId(Long propId) {
+		this.propId = propId;
+	}
+	
 	public String getName() {
 		return name;
+	}
+	
+	public void setName(String name) {
+		this.name = name;
 	}
 	
 	public Date getDateValue() {
 		return dateValue;
 	}
 	
+	public void setDateValue(Date val) {
+		dateValue = val;
+	}
+	
 	public String getStringValue() {
 		return stringValue;
 	}
 	
+	public void setStringValue(String val) {
+		stringValue = val;
+	}
+	
 	public Number getNumberValue() {
 		return numberValue;
+	}
+	
+	public void setNumberValue(Number val) {
+		numberValue = val;
 	}
 
 }
