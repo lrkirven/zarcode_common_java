@@ -88,7 +88,8 @@ public class GeoUtil {
 			Math.sin(dLon/2) * Math.sin(dLon/2); 
 		double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
 		double d = earthR * c;
-		return d;
+		double dInMiles = (d * 0.621371192);
+		return dInMiles;
 	}
 
 }
