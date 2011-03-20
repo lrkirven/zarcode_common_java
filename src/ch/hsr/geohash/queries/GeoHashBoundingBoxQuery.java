@@ -8,6 +8,7 @@
  */
 package ch.hsr.geohash.queries;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,8 +22,8 @@ import ch.hsr.geohash.util.GeoHashSizeTable;
  * either 1,2 or 4 susch hashes, depending on the position of the bounding box
  * on the geohash grid.
  */
-public class GeoHashBoundingBoxQuery implements GeoHashQuery {
-
+public class GeoHashBoundingBoxQuery implements GeoHashQuery, Serializable {
+	private static final long serialVersionUID = 9223256928940522683L;
 	/* there's not going to be more than 4 hashes. */
 	private List<GeoHash> searchHashes = new ArrayList<GeoHash>(4);
 	/* the combined bounding box of those hashes. */
@@ -64,14 +65,22 @@ public class GeoHashBoundingBoxQuery implements GeoHashQuery {
 		return hash.contains(bbox.getUpperLeft()) && hash.contains(bbox.getLowerRight());
 	}
 
+	@Override
 	public boolean contains(GeoHash hash) {
 		for (GeoHash searchHash : searchHashes) {
-			if (hash.within(searchHash))
+			if (hash.within(searchHash)) {
 				return true;
+			}
 		}
 		return false;
 	}
 
+	@Override
+	public boolean contains(WGS84Point point) {
+		return contains(GeoHash.withBitPrecision(point.getLatitude(), point.getLongitude(), 64));
+	}
+
+	@Override
 	public List<GeoHash> getSearchHashes() {
 		return searchHashes;
 	}

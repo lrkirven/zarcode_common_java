@@ -8,17 +8,21 @@
  */
 package ch.hsr.geohash;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class GeoHash {
+@SuppressWarnings({ "JavaDoc" })
+public final class GeoHash implements Comparable<GeoHash>, Serializable {
+	private static final long serialVersionUID = -8553214249630252175L;
 	private static final int[] BITS = { 16, 8, 4, 2, 1 };
 	private static final int BASE32_BITS = 5;
 	public static final long FIRST_BIT_FLAGGED = 0x8000000000000000l;
-	private static final char[] base32 = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k',
-			'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
+	private static final char[] base32 = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f',
+			'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
 
 	private final static Map<Character, Integer> decodeMap = new HashMap<Character, Integer>();
+
 	static {
 		int sz = base32.length;
 		for (int i = 0; i < sz; i++) {
@@ -51,9 +55,27 @@ public final class GeoHash {
 	 * at the same time defines this hash's bounding box.
 	 */
 	public static GeoHash withBitPrecision(double latitude, double longitude, int numberOfBits) {
-		if (Math.abs(latitude) > 90.0 || Math.abs(longitude) > 180.0)
+		if (Math.abs(latitude) > 90.0 || Math.abs(longitude) > 180.0) {
 			throw new IllegalArgumentException("Can't have lat/lon values out of (-90,90)/(-180/180)");
+		}
 		return new GeoHash(latitude, longitude, numberOfBits);
+	}
+
+	public static GeoHash fromBinaryString(String binaryString) {
+		GeoHash geohash = new GeoHash();
+		for (int i = 0; i < binaryString.length(); i++) {
+			if (binaryString.charAt(i) == '1') {
+				geohash.addOnBitToEnd();
+			} else if (binaryString.charAt(i) == '0') {
+				geohash.addOffBitToEnd();
+			} else {
+				throw new IllegalArgumentException(binaryString + " is not a valid geohash as a binary string");
+			}
+		}
+		geohash.bits <<= (64 - geohash.significantBits);
+		long[] latitudeBits = geohash.getRightAlignedLatitudeBits();
+		long[] longitudeBits = geohash.getRightAlignedLongitudeBits();
+		return geohash.recombineLatLonBitsToHash(latitudeBits, longitudeBits);
 	}
 
 	/**
@@ -90,6 +112,35 @@ public final class GeoHash {
 		return hash;
 	}
 
+	public static GeoHash fromLongValue(long hashVal, int significantBits) {
+		double[] latitudeRange = { -90.0, 90.0 };
+		double[] longitudeRange = { -180.0, 180.0 };
+
+		boolean isEvenBit = true;
+		GeoHash hash = new GeoHash();
+
+		String binaryString = Long.toBinaryString(hashVal);
+		while (binaryString.length() < 64) {
+			binaryString = "0" + binaryString;
+		}
+		for (int j = 0; j < significantBits; j++) {
+			if (isEvenBit) {
+				divideRangeDecode(hash, longitudeRange, binaryString.charAt(j) != '0');
+			} else {
+				divideRangeDecode(hash, latitudeRange, binaryString.charAt(j) != '0');
+			}
+			isEvenBit = !isEvenBit;
+		}
+
+		double latitude = (latitudeRange[0] + latitudeRange[1]) / 2;
+		double longitude = (longitudeRange[0] + longitudeRange[1]) / 2;
+
+		hash.point = new WGS84Point(latitude, longitude);
+		setBoundingBox(hash, latitudeRange, longitudeRange);
+		hash.bits <<= (64 - hash.significantBits);
+		return hash;
+	}
+
 	private GeoHash(double latitude, double longitude, int desiredPrecision) {
 		point = new WGS84Point(latitude, longitude);
 		desiredPrecision = Math.min(desiredPrecision, 64);
@@ -112,8 +163,48 @@ public final class GeoHash {
 	}
 
 	private static void setBoundingBox(GeoHash hash, double[] latitudeRange, double[] longitudeRange) {
-		hash.boundingBox = new BoundingBox(new WGS84Point(latitudeRange[0], longitudeRange[0]), new WGS84Point(latitudeRange[1],
+		hash.boundingBox = new BoundingBox(new WGS84Point(latitudeRange[0], longitudeRange[0]), new WGS84Point(
+				latitudeRange[1],
 				longitudeRange[1]));
+	}
+
+	public GeoHash next(int step) {
+		return fromOrd(ord() + step, significantBits);
+	}
+
+	public GeoHash next() {
+		return next(1);
+	}
+
+	public GeoHash prev() {
+		return next(-1);
+	}
+
+	public long ord() {
+		int insignificantBits = 64 - significantBits;
+		return bits >> insignificantBits;
+	}
+
+	public static GeoHash fromOrd(long ord, int significantBits) {
+		int insignificantBits = 64 - significantBits;
+		return fromLongValue(ord << insignificantBits, significantBits);
+	}
+
+	/**
+	 * Counts the number of geohashes contained between the two (ie how many
+	 * times next() is called to increment from one to two) This value depends
+	 * on the number of significant bits.
+	 * 
+	 * @param one
+	 * @param two
+	 * @return number of steps
+	 */
+	public static long stepsBetween(GeoHash one, GeoHash two) {
+		if (one.significantBits() != two.significantBits()) {
+			throw new IllegalArgumentException(
+					"It is only valid to compare the number of steps between two hashes if they have the same number of significant bits");
+		}
+		return two.ord() - one.ord();
 	}
 
 	private void divideRangeEncode(double value, double[] range) {
@@ -148,7 +239,8 @@ public final class GeoHash {
 		GeoHash eastern = getEasternNeighbour();
 		GeoHash southern = getSouthernNeighbour();
 		GeoHash western = getWesternNeighbour();
-		return new GeoHash[] { northern, northern.getEasternNeighbour(), eastern, southern.getEasternNeighbour(), southern,
+		return new GeoHash[] { northern, northern.getEasternNeighbour(), eastern, southern.getEasternNeighbour(),
+				southern,
 				southern.getWesternNeighbour(), western, northern.getWesternNeighbour() };
 	}
 
@@ -156,7 +248,11 @@ public final class GeoHash {
 	 * how many significant bits are there in this {@link GeoHash}?
 	 */
 	public int significantBits() {
-		return (int) significantBits;
+		return significantBits;
+	}
+
+	public long longValue() {
+		return bits;
 	}
 
 	/**
@@ -165,11 +261,9 @@ public final class GeoHash {
 	 * significant bits.
 	 */
 	public String toBase32() {
-		/*
-		if(significantBits % 5 != 0){
+		if (significantBits % 5 != 0) {
 			return "";
 		}
-		*/
 		StringBuilder buf = new StringBuilder();
 
 		long firstFiveBitsMask = 0xf800000000000000l;
@@ -334,6 +428,20 @@ public final class GeoHash {
 		}
 	}
 
+	public String toBinaryString() {
+		StringBuilder bui = new StringBuilder();
+		long bitsCopy = bits;
+		for (int i = 0; i < significantBits; i++) {
+			if ((bitsCopy & FIRST_BIT_FLAGGED) == FIRST_BIT_FLAGGED) {
+				bui.append('1');
+			} else {
+				bui.append('0');
+			}
+			bitsCopy <<= 1;
+		}
+		return bui.toString();
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == this) {
@@ -359,7 +467,7 @@ public final class GeoHash {
 	/**
 	 * return a long mask for this hashes significant bits.
 	 */
-	private final long mask() {
+	private long mask() {
 		if (significantBits == 0) {
 			return 0;
 		} else {
@@ -373,5 +481,10 @@ public final class GeoHash {
 		long mask = 0xffffffffffffffffl;
 		mask >>>= (64 - n);
 		return value & mask;
+	}
+
+	@Override
+	public int compareTo(GeoHash o) {
+		return new Long(bits).compareTo(o.bits);
 	}
 }

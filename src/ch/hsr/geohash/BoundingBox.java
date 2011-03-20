@@ -8,7 +8,10 @@
  */
 package ch.hsr.geohash;
 
-public class BoundingBox {
+import java.io.Serializable;
+
+public class BoundingBox implements Serializable {
+	private static final long serialVersionUID = -7145192134410261076L;
 	private double minLat;
 	private double maxLat;
 	private double minLon;
@@ -50,8 +53,9 @@ public class BoundingBox {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
+		}
 		if (obj instanceof BoundingBox) {
 			BoundingBox that = (BoundingBox) obj;
 			return minLat == that.minLat && minLon == that.minLon && maxLat == that.maxLat && maxLon == that.maxLon;

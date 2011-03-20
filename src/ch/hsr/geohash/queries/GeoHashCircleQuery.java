@@ -8,6 +8,7 @@
  */
 package ch.hsr.geohash.queries;
 
+import java.io.Serializable;
 import java.util.List;
 
 import ch.hsr.geohash.BoundingBox;
@@ -19,9 +20,10 @@ import ch.hsr.geohash.util.VincentyGeodesy;
  * represents a radius search around a specific point via geohashes.
  * Approximates the circle with a square!
  */
-public class GeoHashCircleQuery implements GeoHashQuery {
+public class GeoHashCircleQuery implements GeoHashQuery, Serializable {
+	private static final long serialVersionUID = 1263295371663796291L;
 	private double radius;
-	private GeoHashQuery query;
+	private GeoHashBoundingBoxQuery query;
 	private WGS84Point center;
 
 	/**
@@ -31,11 +33,10 @@ public class GeoHashCircleQuery implements GeoHashQuery {
 	public GeoHashCircleQuery(WGS84Point center, double radius) {
 		this.radius = radius;
 		this.center = center;
-		double halfRadius = radius / 2.0;
-		WGS84Point northEast = VincentyGeodesy.moveInDirection(VincentyGeodesy.moveInDirection(center, 0, halfRadius),
-				90, halfRadius);
-		WGS84Point southWest = VincentyGeodesy.moveInDirection(
-				VincentyGeodesy.moveInDirection(center, 180, halfRadius), 270, halfRadius);
+		WGS84Point northEast = VincentyGeodesy.moveInDirection(VincentyGeodesy.moveInDirection(center, 0, radius), 90,
+				radius);
+		WGS84Point southWest = VincentyGeodesy.moveInDirection(VincentyGeodesy.moveInDirection(center, 180, radius),
+				270, radius);
 		BoundingBox bbox = new BoundingBox(northEast, southWest);
 		query = new GeoHashBoundingBoxQuery(bbox);
 	}
@@ -44,7 +45,7 @@ public class GeoHashCircleQuery implements GeoHashQuery {
 	public boolean contains(GeoHash hash) {
 		return query.contains(hash);
 	}
-	
+
 	@Override
 	public String getWktBox() {
 		return query.getWktBox();
@@ -66,5 +67,10 @@ public class GeoHashCircleQuery implements GeoHashQuery {
 		} else {
 			return radius + "m";
 		}
+	}
+
+	@Override
+	public boolean contains(WGS84Point point) {
+		return query.contains(point);
 	}
 }
